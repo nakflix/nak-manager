@@ -1,2 +1,9 @@
-https://github.com/nakflix/bot1.git
-https://github.com/nakflix/bot2.git
+https://github.com/nakflix/Nakflixlink8.git
+https://github.com/nakflix/Nakflixlink4.git
+https://github.com/nakflix/Nakflixlink7.git
+https://github.com/nakflix/Nakflixlink5.git
+https://github.com/nakflix/Nakflixlink2.git
+https://github.com/nakflix/Nakflixlink1.git
+https://github.com/nakflix/NakflixSharing1.git
+https://github.com/nakflix/NakflixPlus.git
+https://github.com/nakflix/NETFLIXTVSHOWS.git
