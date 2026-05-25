@@ -36,7 +36,7 @@ for i, repo in enumerate(repos, start=1):
 
     supervisor_config += f"""
 [program:{repo_name}]
-command=python bot.py
+command=python main.py
 directory=/app/{repo_name}
 autostart=true
 autorestart=true
