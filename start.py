@@ -38,21 +38,21 @@ for repo in repos:
             req_path
         ])
 
-    # Detect main file
-if os.path.exists(f"{repo_name}/main.py"):
-    main_file = "main.py"
+    # Detect startup file
+    if os.path.exists(f"{repo_name}/main.py"):
+        main_file = "main.py"
 
-elif os.path.exists(f"{repo_name}/bot.py"):
-    main_file = "bot.py"
+    elif os.path.exists(f"{repo_name}/bot.py"):
+        main_file = "bot.py"
 
-elif os.path.exists(f"{repo_name}/app.py"):
-    main_file = "app.py"
+    elif os.path.exists(f"{repo_name}/app.py"):
+        main_file = "app.py"
 
-else:
-    print(f"No startup file found for {repo_name}")
-    continue
+    else:
+        print(f"No startup file found for {repo_name}")
+        continue
 
-    # Supervisor config
+    # Generate supervisor config
     supervisor_config += f"""
 [program:{repo_name}]
 command=python {main_file}
@@ -60,8 +60,10 @@ directory=/app/{repo_name}
 environment=PORT="{port}"
 autostart=true
 autorestart=true
-stderr_logfile=/dev/stderr
 stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
 """
 
     port += 1
