@@ -39,13 +39,18 @@ for repo in repos:
         ])
 
     # Detect main file
+if os.path.exists(f"{repo_name}/main.py"):
+    main_file = "main.py"
+
+elif os.path.exists(f"{repo_name}/bot.py"):
     main_file = "bot.py"
 
-    if os.path.exists(f"{repo_name}/main.py"):
-        main_file = "main.py"
+elif os.path.exists(f"{repo_name}/app.py"):
+    main_file = "app.py"
 
-    elif os.path.exists(f"{repo_name}/app.py"):
-        main_file = "app.py"
+else:
+    print(f"No startup file found for {repo_name}")
+    continue
 
     # Supervisor config
     supervisor_config += f"""
