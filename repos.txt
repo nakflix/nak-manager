@@ -7,4 +7,3 @@ https://github.com/nakflix/Nakflixlink1.git
 https://github.com/nakflix/NakflixSharing1.git
 https://github.com/nakflix/NakflixPlus.git
 https://github.com/nakflix/NETFLIXTVSHOWS.git
-https://github.com/nakflix/nakflixmoviebot.git
