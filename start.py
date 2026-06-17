@@ -7,10 +7,10 @@ load_dotenv()
 TOKEN = os.environ.get("GITHUB_TOKEN")
 
 if not TOKEN:
-raise Exception("GITHUB_TOKEN not found in .env")
+    raise Exception("GITHUB_TOKEN not found in .env")
 
 with open("repos.txt") as f:
-repos = [r.strip() for r in f.readlines() if r.strip()]
+    repos = [r.strip() for r in f.readlines() if r.strip()]
 
 SUPERVISOR_DIR = "/etc/supervisor/conf.d"
 LOG_DIR = "/var/log"
@@ -19,77 +19,74 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 for repo in repos:
 
-```
-repo_name = repo.split("/")[-1].replace(".git", "")
-repo_path = f"/root/{repo_name}"
+    repo_name = repo.split("/")[-1].replace(".git", "")
+    repo_path = f"/root/{repo_name}"
 
-print(f"\n=== Processing {repo_name} ===")
+    print(f"\n=== Processing {repo_name} ===")
 
-auth_repo = repo.replace(
-    "https://",
-    f"https://{TOKEN}@"
-)
+    auth_repo = repo.replace(
+        "https://",
+        f"https://{TOKEN}@"
+    )
 
-# Clone repo if missing
-if not os.path.exists(repo_path):
+    # Clone repo if missing
+    if not os.path.exists(repo_path):
+        subprocess.run(
+            ["git", "clone", auth_repo, repo_path],
+            check=False
+        )
+
+    # Create virtual environment
+    venv_path = f"{repo_path}/venv"
+
+    if not os.path.exists(venv_path):
+        subprocess.run(
+            ["python3", "-m", "venv", venv_path],
+            check=False
+        )
+
+    pip_path = f"{venv_path}/bin/pip"
+    python_path = f"{venv_path}/bin/python"
+
+    # Upgrade pip
     subprocess.run(
-        ["git", "clone", auth_repo, repo_path],
+        [pip_path, "install", "--upgrade", "pip"],
         check=False
     )
 
-# Create virtual environment
-venv_path = f"{repo_path}/venv"
+    # Install requirements
+    req_path = f"{repo_path}/requirements.txt"
 
-if not os.path.exists(venv_path):
-    subprocess.run(
-        ["python3", "-m", "venv", venv_path],
-        check=False
-    )
+    if os.path.exists(req_path):
+        subprocess.run(
+            [pip_path, "install", "-r", req_path],
+            check=False
+        )
 
-pip_path = f"{venv_path}/bin/pip"
-python_path = f"{venv_path}/bin/python"
+    # Detect startup file
+    startup_files = [
+        "main.py",
+        "bot.py",
+        "app.py",
+        "run.py",
+        "start.py"
+    ]
 
-# Upgrade pip
-subprocess.run(
-    [pip_path, "install", "--upgrade", "pip"],
-    check=False
-)
+    main_file = None
 
-# Install requirements
-req_path = f"{repo_path}/requirements.txt"
+    for file in startup_files:
+        if os.path.exists(f"{repo_path}/{file}"):
+            main_file = file
+            break
 
-if os.path.exists(req_path):
-    subprocess.run(
-        [pip_path, "install", "-r", req_path],
-        check=False
-    )
+    if not main_file:
+        print(f"Skipping {repo_name}: no startup file found")
+        continue
 
-# Detect startup file
-startup_files = [
-    "main.py",
-    "bot.py",
-    "app.py",
-    "run.py",
-    "start.py"
-]
+    out_log = f"{LOG_DIR}/{repo_name}.out.log"
+    err_log = f"{LOG_DIR}/{repo_name}.err.log"
 
-main_file = None
-
-for file in startup_files:
-    if os.path.exists(f"{repo_path}/{file}"):
-        main_file = file
-        break
-
-if not main_file:
-    print(f"Skipping {repo_name}: no startup file found")
-    continue
-
-out_log = f"{LOG_DIR}/{repo_name}.out.log"
-err_log = f"{LOG_DIR}/{repo_name}.err.log"
-
-supervisor_conf = f"""
-```
-
+    supervisor_conf = f"""
 [program:{repo_name}]
 directory={repo_path}
 command={python_path} {main_file}
@@ -101,14 +98,12 @@ stderr_logfile={err_log}
 redirect_stderr=false
 """
 
-```
-conf_path = f"{SUPERVISOR_DIR}/{repo_name}.conf"
+    conf_path = f"{SUPERVISOR_DIR}/{repo_name}.conf"
 
-with open(conf_path, "w") as conf_file:
-    conf_file.write(supervisor_conf)
+    with open(conf_path, "w") as conf_file:
+        conf_file.write(supervisor_conf)
 
-print(f"Created supervisor config for {repo_name}")
-```
+    print(f"Created supervisor config for {repo_name}")
 
 print("\nReloading supervisor...")
 
