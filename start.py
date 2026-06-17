@@ -116,3 +116,4 @@ subprocess.run(["supervisorctl", "reread"], check=False)
 subprocess.run(["supervisorctl", "update"], check=False)
 
 print("\nDone.")
+
