@@ -17,12 +17,17 @@ LOG_DIR = "/var/log"
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-for repo in repos:
+BASE_PORT = 8080  # 🔥 start port for all bots
+
+for index, repo in enumerate(repos):
 
     repo_name = repo.split("/")[-1].replace(".git", "")
     repo_path = f"/root/{repo_name}"
 
     print(f"\n=== Processing {repo_name} ===")
+
+    # 🔥 assign unique port per bot
+    port = BASE_PORT + index
 
     auth_repo = repo.replace(
         "https://",
@@ -62,6 +67,22 @@ for repo in repos:
             [pip_path, "install", "-r", req_path],
             check=False
         )
+
+    # 🔥 UPDATE config.py PORT AUTOMATICALLY
+    config_path = f"{repo_path}/config.py"
+
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            lines = f.readlines()
+
+        with open(config_path, "w") as f:
+            for line in lines:
+                if "PORT" in line:
+                    f.write(f"PORT = {port}\n")
+                else:
+                    f.write(line)
+
+        print(f"✔ Set PORT={port} for {repo_name}")
 
     # Detect startup file
     startup_files = [
