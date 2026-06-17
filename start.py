@@ -1,80 +1,48 @@
+from dotenv import load_dotenv
 import os
 import subprocess
+
+load_dotenv()
 
 TOKEN = os.environ.get("GITHUB_TOKEN")
 
 with open("repos.txt") as f:
     repos = [r.strip() for r in f.readlines() if r.strip()]
 
-supervisor_config = """
-[supervisord]
-nodaemon=true
-"""
+SUPERVISOR_DIR = "/etc/supervisor/conf.d"
+LOG_DIR = "/var/log"
 
-port = 8080
+os.makedirs(LOG_DIR, exist_ok=True)
 
 for repo in repos:
 
     repo_name = repo.split("/")[-1].replace(".git", "")
+    repo_path = f"/root/{repo_name}"
 
-    auth_repo = repo.replace(
-        "https://",
-        f"https://{TOKEN}@"
-    )
+    auth_repo = repo.replace("https://", f"https://{TOKEN}@")
 
-    # Clone repo
-    if not os.path.exists(repo_name):
-        subprocess.run(["git", "clone", auth_repo])
+    if not os.path.exists(repo_path):
+        subprocess.run(["git", "clone", auth_repo, repo_path])
 
-    # Install requirements
-    req_path = f"{repo_name}/requirements.txt"
-
-    if os.path.exists(req_path):
-        subprocess.run([
-            "pip",
-            "install",
-            "--no-cache-dir",
-            "-r",
-            req_path
-        ])
-
-    # Detect startup file
-    if os.path.exists(f"{repo_name}/main.py"):
+    if os.path.exists(f"{repo_path}/main.py"):
         main_file = "main.py"
-
-    elif os.path.exists(f"{repo_name}/bot.py"):
+    elif os.path.exists(f"{repo_path}/bot.py"):
         main_file = "bot.py"
-
-    elif os.path.exists(f"{repo_name}/app.py"):
-        main_file = "app.py"
-
     else:
-        print(f"No startup file found for {repo_name}")
-        continue
+        main_file = "start.py"
 
-    # Generate supervisor config
-    supervisor_config += f"""
+    conf = f"""
 [program:{repo_name}]
-command=python {main_file}
-directory=/app/{repo_name}
-environment=PORT="{port}"
+directory={repo_path}
+command=python3 {main_file}
 autostart=true
 autorestart=true
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
+stderr_logfile={LOG_DIR}/{repo_name}.err.log
+stdout_logfile={LOG_DIR}/{repo_name}.out.log
 """
 
-    port += 1
+    with open(f"{SUPERVISOR_DIR}/{repo_name}.conf", "w") as f:
+        f.write(conf)
 
-# Write supervisor config
-with open("supervisor.conf", "w") as f:
-    f.write(supervisor_config)
-
-# Start supervisor
-subprocess.run([
-    "supervisord",
-    "-c",
-    "/app/supervisor.conf"
-])
+subprocess.run(["supervisorctl", "reread"])
+subprocess.run(["supervisorctl", "update"])
